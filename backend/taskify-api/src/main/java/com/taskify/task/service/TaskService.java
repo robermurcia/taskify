@@ -1,6 +1,7 @@
 package com.taskify.task.service;
 
 import com.taskify.task.dto.TaskRequestDTO;
+import com.taskify.task.model.Priority;
 import com.taskify.task.model.Task;
 import com.taskify.task.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
@@ -65,5 +66,18 @@ public class TaskService {
         }
         task.setCompleted(completed);
         return repository.save(task);
+    }
+
+    public List<Task> listByPriority(String userId, String priority) {
+        try {
+            Priority enumValue = Priority.valueOf(priority.toUpperCase());
+            return repository.findAllByUserIdAndPriorityOrderByTaskDateAsc(userId, enumValue);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid priority: " + priority);
+        }
+    }
+
+    public List<Task> listByCompleted(String userId, boolean completed) {
+        return repository.findAllByUserIdAndCompletedOrderByTaskDateAsc(userId, completed);
     }
 }

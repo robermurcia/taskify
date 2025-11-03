@@ -77,4 +77,14 @@ public class TaskController {
     public Task complete(@PathVariable String id, @RequestParam boolean completed, HttpServletRequest req) {
         return service.toggleComplete(id, getUserId(req), completed);
     }
+
+    @GetMapping("/priority")
+    public List<Task> listByPriority(HttpServletRequest req, @RequestParam String value) {
+        return service.listByPriority(getUserId(req), value);
+    }
+
+    @GetMapping("/completed")
+    public List<Task> listByCompleted(HttpServletRequest req, @RequestParam boolean value) {
+        return service.listByCompleted(getUserId(req), value);
+    }
 }
