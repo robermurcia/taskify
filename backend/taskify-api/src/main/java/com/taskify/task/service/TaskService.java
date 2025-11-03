@@ -1,0 +1,69 @@
+package com.taskify.task.service;
+
+import com.taskify.task.dto.TaskRequestDTO;
+import com.taskify.task.model.Task;
+import com.taskify.task.repository.TaskRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class TaskService {
+
+    private final TaskRepository repository;
+
+    public List<Task> list(String userId) {
+        return repository.findAllByUserIdOrderByTaskDateAsc(userId);
+    }
+
+    public List<Task> listToday(String userId) {
+        String today = LocalDate.now().toString();
+        return repository.findAllByUserIdAndTaskDateOrderByTaskDateAsc(userId, today);
+    }
+
+    public Task create(TaskRequestDTO dto, String userId) {
+        Task task = Task.builder()
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .taskDate(dto.getTaskDate())
+                .priority(dto.getPriority())
+                .repeatWeekly(dto.isRepeatWeekly())
+                .userId(userId)
+                .build();
+
+        return repository.save(task);
+    }
+
+    public Task update(String id, TaskRequestDTO dto, String userId) {
+        Task task = repository.findById(id).orElseThrow();
+        if (!task.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden: Task does not belong to this user");
+        }
+        task.setTitle(dto.getTitle());
+        task.setDescription(dto.getDescription());
+        task.setTaskDate(dto.getTaskDate());
+        task.setPriority(dto.getPriority());
+        task.setRepeatWeekly(dto.isRepeatWeekly());
+        return repository.save(task);
+    }
+
+    public void delete(String id, String userId) {
+        Task task = repository.findById(id).orElseThrow();
+        if (!task.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden: Task does not belong to this user");
+        }
+        repository.deleteById(id);
+    }
+
+    public Task toggleComplete(String id, String userId, boolean completed) {
+        Task task = repository.findById(id).orElseThrow();
+        if (!task.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden: Task does not belong to this user");
+        }
+        task.setCompleted(completed);
+        return repository.save(task);
+    }
+}

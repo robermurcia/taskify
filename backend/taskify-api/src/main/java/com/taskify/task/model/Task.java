@@ -1,6 +1,5 @@
 package com.taskify.task.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -9,15 +8,16 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
+
+import java.time.LocalDateTime;
 
 @Document(collection = "tasks")
 @CompoundIndexes({
-    @CompoundIndex(name = "uid_date_idx", def = "{'userId': 1, 'date': 1}")
+    @CompoundIndex(name = "uid_date_idx", def = "{'userId': 1, 'taskDate': 1}")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Task {
@@ -35,8 +35,8 @@ public class Task {
     @Size(max = 500)
     private String description;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate date;
+    @Field("taskDate")
+    private String taskDate;
 
     @Builder.Default
     private boolean completed = false;
@@ -48,8 +48,8 @@ public class Task {
     private boolean repeatWeekly = false;
 
     @CreatedDate
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @LastModifiedDate
-    private OffsetDateTime updatedAt;
+    private LocalDateTime updatedAt;
 }
