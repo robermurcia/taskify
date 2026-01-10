@@ -4,11 +4,12 @@ import com.taskify.task.dto.TaskRequestDTO;
 import com.taskify.task.dto.TaskResponseDTO;
 import com.taskify.task.model.Task;
 import com.taskify.task.service.TaskService;
-import jakarta.servlet.http.HttpServletRequest;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -18,25 +19,19 @@ public class TaskController {
 
     private final TaskService service;
 
-    // Simulamos usuario con header X-User-Id (hasta tener JWT)
-    private String getUserId(HttpServletRequest req) {
-        String userId = req.getHeader("X-User-Id");
-        return (userId != null && !userId.isEmpty()) ? userId : "demo-user";
-    }
-
     @GetMapping
-    public List<Task> list(HttpServletRequest req) {
-        return service.list(getUserId(req));
+    public List<Task> list(Principal principal) {
+        return service.list(principal.getName());
     }
 
     @GetMapping("/today")
-    public List<Task> listToday(HttpServletRequest req) {
-        return service.listToday(getUserId(req));
+    public List<Task> listToday(Principal principal) {
+        return service.listToday(principal.getName());
     }
 
     @PostMapping
-    public TaskResponseDTO create(@RequestBody @Valid TaskRequestDTO dto, HttpServletRequest req) {
-        Task created = service.create(dto, getUserId(req));
+    public TaskResponseDTO create(@RequestBody @Valid TaskRequestDTO dto, Principal principal) {
+        Task created = service.create(dto, principal.getName());
         return TaskResponseDTO.builder()
                 .id(created.getId())
                 .title(created.getTitle())
@@ -51,9 +46,10 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public TaskResponseDTO update(@PathVariable String id, @RequestBody @Valid TaskRequestDTO dto, HttpServletRequest req) {
+    public TaskResponseDTO update(@PathVariable String id, @RequestBody @Valid TaskRequestDTO dto,
+            Principal principal) {
 
-        Task updated = service.update(id, dto, getUserId(req));
+        Task updated = service.update(id, dto, principal.getName());
 
         return TaskResponseDTO.builder()
                 .id(updated.getId())
@@ -69,22 +65,22 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable String id, HttpServletRequest req) {
-        service.delete(id, getUserId(req));
+    public void delete(@PathVariable String id, Principal principal) {
+        service.delete(id, principal.getName());
     }
 
     @PutMapping("/{id}/complete")
-    public Task complete(@PathVariable String id, @RequestParam boolean completed, HttpServletRequest req) {
-        return service.toggleComplete(id, getUserId(req), completed);
+    public Task complete(@PathVariable String id, @RequestParam boolean completed, Principal principal) {
+        return service.toggleComplete(id, principal.getName(), completed);
     }
 
     @GetMapping("/priority")
-    public List<Task> listByPriority(HttpServletRequest req, @RequestParam String value) {
-        return service.listByPriority(getUserId(req), value);
+    public List<Task> listByPriority(Principal principal, @RequestParam String value) {
+        return service.listByPriority(principal.getName(), value);
     }
 
     @GetMapping("/completed")
-    public List<Task> listByCompleted(HttpServletRequest req, @RequestParam boolean value) {
-        return service.listByCompleted(getUserId(req), value);
+    public List<Task> listByCompleted(Principal principal, @RequestParam boolean value) {
+        return service.listByCompleted(principal.getName(), value);
     }
 }
