@@ -3,12 +3,15 @@ package com.taskify.auth.service;
 import com.taskify.auth.dto.AuthRequest;
 import com.taskify.auth.dto.AuthResponse;
 import com.taskify.auth.dto.RegisterRequest;
+import com.taskify.exception.BadRequestException;
+import com.taskify.exception.ResourceNotFoundException;
 import com.taskify.user.model.User;
 import com.taskify.user.repository.UserRepository;
 import com.taskify.auth.jwt.JwtService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,7 +28,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new BadRequestException("Email already in use");
         }
 
         User user = User.builder()
@@ -48,15 +51,13 @@ public class AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(),
-                            request.getPassword()
-                    )
-            );
+                            request.getPassword()));
         } catch (AuthenticationException e) {
-            throw new RuntimeException("Invalid credentials");
+            throw new BadCredentialsException("Invalid credentials");
         }
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String token = jwtService.generateToken(user.getId());
 

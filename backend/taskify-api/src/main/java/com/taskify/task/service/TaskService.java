@@ -1,5 +1,7 @@
 package com.taskify.task.service;
 
+import com.taskify.exception.BadRequestException;
+import com.taskify.exception.ResourceNotFoundException;
 import com.taskify.task.dto.TaskRequestDTO;
 import com.taskify.task.model.Priority;
 import com.taskify.task.model.Task;
@@ -39,10 +41,13 @@ public class TaskService {
     }
 
     public Task update(String id, TaskRequestDTO dto, String userId) {
-        Task task = repository.findById(id).orElseThrow();
+        Task task = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
+
         if (!task.getUserId().equals(userId)) {
-            throw new RuntimeException("Forbidden: Task does not belong to this user");
+            throw new ResourceNotFoundException("Task not found with id: " + id);
         }
+
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
         task.setTaskDate(dto.getTaskDate());
@@ -52,18 +57,24 @@ public class TaskService {
     }
 
     public void delete(String id, String userId) {
-        Task task = repository.findById(id).orElseThrow();
+        Task task = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
+
         if (!task.getUserId().equals(userId)) {
-            throw new RuntimeException("Forbidden: Task does not belong to this user");
+            throw new ResourceNotFoundException("Task not found with id: " + id);
         }
+
         repository.deleteById(id);
     }
 
     public Task toggleComplete(String id, String userId, boolean completed) {
-        Task task = repository.findById(id).orElseThrow();
+        Task task = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
+
         if (!task.getUserId().equals(userId)) {
-            throw new RuntimeException("Forbidden: Task does not belong to this user");
+            throw new ResourceNotFoundException("Task not found with id: " + id);
         }
+
         task.setCompleted(completed);
         return repository.save(task);
     }
@@ -73,7 +84,7 @@ public class TaskService {
             Priority enumValue = Priority.valueOf(priority.toUpperCase());
             return repository.findAllByUserIdAndPriorityOrderByTaskDateAsc(userId, enumValue);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid priority: " + priority);
+            throw new BadRequestException("Invalid priority: " + priority);
         }
     }
 
