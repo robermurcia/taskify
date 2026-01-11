@@ -7,10 +7,11 @@ import com.taskify.task.model.Priority;
 import com.taskify.task.model.Task;
 import com.taskify.task.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -18,13 +19,30 @@ public class TaskService {
 
     private final TaskRepository repository;
 
-    public List<Task> list(String userId) {
-        return repository.findAllByUserIdOrderByTaskDateAsc(userId);
+    public Page<Task> list(String userId, Boolean completed, String priority, Pageable pageable) {
+        Priority priorityEnum = null;
+        if (priority != null && !priority.isBlank()) {
+            try {
+                priorityEnum = Priority.valueOf(priority.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid priority: " + priority);
+            }
+        }
+
+        if (completed != null && priorityEnum != null) {
+            return repository.findByUserIdAndCompletedAndPriority(userId, completed, priorityEnum, pageable);
+        } else if (completed != null) {
+            return repository.findByUserIdAndCompleted(userId, completed, pageable);
+        } else if (priorityEnum != null) {
+            return repository.findByUserIdAndPriority(userId, priorityEnum, pageable);
+        } else {
+            return repository.findByUserId(userId, pageable);
+        }
     }
 
-    public List<Task> listToday(String userId) {
+    public Page<Task> listToday(String userId, Pageable pageable) {
         String today = LocalDate.now().toString();
-        return repository.findAllByUserIdAndTaskDateOrderByTaskDateAsc(userId, today);
+        return repository.findByUserIdAndTaskDate(userId, today, pageable);
     }
 
     public Task create(TaskRequestDTO dto, String userId) {
@@ -77,18 +95,5 @@ public class TaskService {
 
         task.setCompleted(completed);
         return repository.save(task);
-    }
-
-    public List<Task> listByPriority(String userId, String priority) {
-        try {
-            Priority enumValue = Priority.valueOf(priority.toUpperCase());
-            return repository.findAllByUserIdAndPriorityOrderByTaskDateAsc(userId, enumValue);
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid priority: " + priority);
-        }
-    }
-
-    public List<Task> listByCompleted(String userId, boolean completed) {
-        return repository.findAllByUserIdAndCompletedOrderByTaskDateAsc(userId, completed);
     }
 }

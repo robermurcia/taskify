@@ -11,14 +11,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,9 +37,12 @@ class TaskServiceTest {
     private Task task;
     private TaskRequestDTO taskRequestDTO;
     private final String userId = "user-123";
+    private Pageable pageable;
 
     @BeforeEach
     void setUp() {
+        pageable = PageRequest.of(0, 10);
+
         task = Task.builder()
                 .id("task-1")
                 .title("Test Task")
@@ -55,14 +62,15 @@ class TaskServiceTest {
     }
 
     @Test
-    void list_ReturnsListOfTasks() {
-        when(repository.findAllByUserIdOrderByTaskDateAsc(userId)).thenReturn(Arrays.asList(task));
+    void list_ReturnsPageOfTasks() {
+        Page<Task> taskPage = new PageImpl<>(Arrays.asList(task));
+        when(repository.findByUserId(eq(userId), any(Pageable.class))).thenReturn(taskPage);
 
-        List<Task> result = taskService.list(userId);
+        Page<Task> result = taskService.list(userId, null, null, pageable);
 
         assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(task.getTitle(), result.get(0).getTitle());
+        assertEquals(1, result.getTotalElements());
+        assertEquals(task.getTitle(), result.getContent().get(0).getTitle());
     }
 
     @Test

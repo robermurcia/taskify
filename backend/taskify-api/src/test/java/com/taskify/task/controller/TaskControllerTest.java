@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
@@ -70,11 +73,12 @@ class TaskControllerTest {
 
         @Test
         void list_ReturnsTasks() throws Exception {
-                when(taskService.list("test@example.com")).thenReturn(Arrays.asList(task));
+                Page<Task> taskPage = new PageImpl<>(Arrays.asList(task));
+                when(taskService.list(eq("test@example.com"), any(), any(), any(Pageable.class))).thenReturn(taskPage);
 
                 mockMvc.perform(get("/api/tasks").principal(() -> "test@example.com"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$[0].title").value("Test Task"));
+                                .andExpect(jsonPath("$.content[0].title").value("Test Task"));
         }
 
         @Test
