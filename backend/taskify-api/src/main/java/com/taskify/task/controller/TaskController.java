@@ -5,6 +5,8 @@ import com.taskify.task.dto.TaskResponseDTO;
 import com.taskify.task.model.Task;
 import com.taskify.task.service.TaskService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,21 +17,25 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
+@Tag(name = "Tareas", description = "Operaciones de gestión de tareas")
 public class TaskController {
 
     private final TaskService service;
 
     @GetMapping
+    @Operation(summary = "Listar todas las tareas", description = "Devuelve todas las tareas del usuario autenticado")
     public List<Task> list(Principal principal) {
         return service.list(principal.getName());
     }
 
     @GetMapping("/today")
+    @Operation(summary = "Listar tareas de hoy", description = "Devuelve las tareas programadas para la fecha actual")
     public List<Task> listToday(Principal principal) {
         return service.listToday(principal.getName());
     }
 
     @PostMapping
+    @Operation(summary = "Crear tarea", description = "Crea una nueva tarea")
     public TaskResponseDTO create(@RequestBody @Valid TaskRequestDTO dto, Principal principal) {
         Task created = service.create(dto, principal.getName());
         return TaskResponseDTO.builder()
@@ -46,6 +52,7 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Actualizar tarea", description = "Actualiza los detalles de una tarea existente")
     public TaskResponseDTO update(@PathVariable String id, @RequestBody @Valid TaskRequestDTO dto,
             Principal principal) {
 
@@ -65,21 +72,25 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar tarea", description = "Elimina una tarea por su ID")
     public void delete(@PathVariable String id, Principal principal) {
         service.delete(id, principal.getName());
     }
 
     @PutMapping("/{id}/complete")
+    @Operation(summary = "Completar/Descompletar tarea", description = "Marca una tarea como completada o pendiente")
     public Task complete(@PathVariable String id, @RequestParam boolean completed, Principal principal) {
         return service.toggleComplete(id, principal.getName(), completed);
     }
 
     @GetMapping("/priority")
+    @Operation(summary = "Listar por prioridad", description = "Filtra tareas por nivel de prioridad")
     public List<Task> listByPriority(Principal principal, @RequestParam String value) {
         return service.listByPriority(principal.getName(), value);
     }
 
     @GetMapping("/completed")
+    @Operation(summary = "Listar por estado", description = "Filtra tareas por estado completado/pendiente")
     public List<Task> listByCompleted(Principal principal, @RequestParam boolean value) {
         return service.listByCompleted(principal.getName(), value);
     }
