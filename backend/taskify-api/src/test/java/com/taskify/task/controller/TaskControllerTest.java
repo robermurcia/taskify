@@ -1,6 +1,7 @@
 package com.taskify.task.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taskify.auth.jwt.JwtFilter;
 import com.taskify.exception.ResourceNotFoundException;
 import com.taskify.task.dto.TaskRequestDTO;
 import com.taskify.task.model.Priority;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -29,99 +31,105 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 class TaskControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    @MockBean
-    private TaskService taskService;
+        @MockBean
+        private TaskService taskService;
 
-    private Task task;
-    private TaskRequestDTO taskRequestDTO;
+        @MockBean
+        private JwtFilter jwtFilter;
 
-    @BeforeEach
-    void setUp() {
-        task = Task.builder()
-                .id("task-1")
-                .title("Test Task")
-                .description("Description")
-                .taskDate(LocalDate.now().toString())
-                .priority(Priority.LOW)
-                .userId("user")
-                .build();
+        @MockBean
+        private UserDetailsService userDetailsService;
 
-        taskRequestDTO = TaskRequestDTO.builder()
-                .title("Test Task")
-                .description("Description")
-                .taskDate(LocalDate.now().toString())
-                .priority(Priority.LOW)
-                .build();
-    }
+        private Task task;
+        private TaskRequestDTO taskRequestDTO;
 
-    @Test
-    void list_ReturnsTasks() throws Exception {
-        when(taskService.list("test@example.com")).thenReturn(Arrays.asList(task));
+        @BeforeEach
+        void setUp() {
+                task = Task.builder()
+                                .id("task-1")
+                                .title("Test Task")
+                                .description("Description")
+                                .taskDate(LocalDate.now().toString())
+                                .priority(Priority.LOW)
+                                .userId("user")
+                                .build();
 
-        mockMvc.perform(get("/api/tasks").principal(() -> "test@example.com"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Test Task"));
-    }
+                taskRequestDTO = TaskRequestDTO.builder()
+                                .title("Test Task")
+                                .description("Description")
+                                .taskDate(LocalDate.now().toString())
+                                .priority(Priority.LOW)
+                                .build();
+        }
 
-    @Test
-    void create_ReturnsCreatedTask() throws Exception {
-        when(taskService.create(any(TaskRequestDTO.class), eq("test@example.com"))).thenReturn(task);
+        @Test
+        void list_ReturnsTasks() throws Exception {
+                when(taskService.list("test@example.com")).thenReturn(Arrays.asList(task));
 
-        mockMvc.perform(post("/api/tasks")
-                .principal(() -> "test@example.com")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(taskRequestDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Task"));
-    }
+                mockMvc.perform(get("/api/tasks").principal(() -> "test@example.com"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].title").value("Test Task"));
+        }
 
-    @Test
-    void create_InvalidData_ReturnsBadRequest() throws Exception {
-        TaskRequestDTO invalid = TaskRequestDTO.builder().build();
+        @Test
+        void create_ReturnsCreatedTask() throws Exception {
+                when(taskService.create(any(TaskRequestDTO.class), eq("test@example.com"))).thenReturn(task);
 
-        mockMvc.perform(post("/api/tasks")
-                .principal(() -> "test@example.com")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalid)))
-                .andExpect(status().isBadRequest());
-    }
+                mockMvc.perform(post("/api/tasks")
+                                .principal(() -> "test@example.com")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(taskRequestDTO)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.title").value("Test Task"));
+        }
 
-    @Test
-    void update_ReturnsUpdatedTask() throws Exception {
-        when(taskService.update(eq("task-1"), any(TaskRequestDTO.class), eq("test@example.com")))
-                .thenReturn(task);
+        @Test
+        void create_InvalidData_ReturnsBadRequest() throws Exception {
+                TaskRequestDTO invalid = TaskRequestDTO.builder().build();
 
-        mockMvc.perform(put("/api/tasks/{id}", "task-1")
-                .principal(() -> "test@example.com")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(taskRequestDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Task"));
-    }
+                mockMvc.perform(post("/api/tasks")
+                                .principal(() -> "test@example.com")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalid)))
+                                .andExpect(status().isBadRequest());
+        }
 
-    @Test
-    void update_NotFound_ReturnsNotFound() throws Exception {
-        when(taskService.update(eq("task-1"), any(TaskRequestDTO.class), eq("test@example.com")))
-                .thenThrow(new ResourceNotFoundException("Task not found"));
+        @Test
+        void update_ReturnsUpdatedTask() throws Exception {
+                when(taskService.update(eq("task-1"), any(TaskRequestDTO.class), eq("test@example.com")))
+                                .thenReturn(task);
 
-        mockMvc.perform(put("/api/tasks/{id}", "task-1")
-                .principal(() -> "test@example.com")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(taskRequestDTO)))
-                .andExpect(status().isNotFound());
-    }
+                mockMvc.perform(put("/api/tasks/{id}", "task-1")
+                                .principal(() -> "test@example.com")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(taskRequestDTO)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.title").value("Test Task"));
+        }
 
-    @Test
-    void delete_ReturnsOk() throws Exception {
-        doNothing().when(taskService).delete("task-1", "test@example.com");
+        @Test
+        void update_NotFound_ReturnsNotFound() throws Exception {
+                when(taskService.update(eq("task-1"), any(TaskRequestDTO.class), eq("test@example.com")))
+                                .thenThrow(new ResourceNotFoundException("Task not found"));
 
-        mockMvc.perform(delete("/api/tasks/{id}", "task-1").principal(() -> "test@example.com"))
-                .andExpect(status().isOk());
-    }
+                mockMvc.perform(put("/api/tasks/{id}", "task-1")
+                                .principal(() -> "test@example.com")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(taskRequestDTO)))
+                                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void delete_ReturnsOk() throws Exception {
+                doNothing().when(taskService).delete("task-1", "test@example.com");
+
+                mockMvc.perform(delete("/api/tasks/{id}", "task-1").principal(() -> "test@example.com"))
+                                .andExpect(status().isOk());
+        }
 }
