@@ -3,6 +3,7 @@ package com.taskify.auth.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taskify.auth.dto.AuthRequest;
 import com.taskify.auth.dto.AuthResponse;
+import com.taskify.auth.dto.RefreshRequest;
 import com.taskify.auth.dto.RegisterRequest;
 import com.taskify.auth.jwt.JwtFilter;
 import com.taskify.auth.service.AuthService;
@@ -18,6 +19,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -49,7 +52,10 @@ class AuthControllerTest {
                                 .password("password")
                                 .build();
 
-                AuthResponse response = AuthResponse.builder().token("jwt-token").build();
+                AuthResponse response = AuthResponse.builder()
+                                .token("jwt-token")
+                                .refreshToken("refresh-token")
+                                .build();
 
                 when(authService.register(any(RegisterRequest.class))).thenReturn(response);
 
@@ -57,7 +63,8 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.token").value("jwt-token"));
+                                .andExpect(jsonPath("$.token").value("jwt-token"))
+                                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
         }
 
         @Test
@@ -99,7 +106,10 @@ class AuthControllerTest {
                                 .password("password")
                                 .build();
 
-                AuthResponse response = AuthResponse.builder().token("jwt-token").build();
+                AuthResponse response = AuthResponse.builder()
+                                .token("jwt-token")
+                                .refreshToken("refresh-token")
+                                .build();
 
                 when(authService.login(any(AuthRequest.class))).thenReturn(response);
 
@@ -107,7 +117,8 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.token").value("jwt-token"));
+                                .andExpect(jsonPath("$.token").value("jwt-token"))
+                                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
         }
 
         @Test
@@ -125,5 +136,56 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isUnauthorized())
                                 .andExpect(jsonPath("$.message").value("Credenciales inválidas"));
+        }
+
+        @Test
+        void refresh_Success() throws Exception {
+                RefreshRequest request = RefreshRequest.builder()
+                                .refreshToken("valid-refresh-token")
+                                .build();
+
+                AuthResponse response = AuthResponse.builder()
+                                .token("new-jwt-token")
+                                .refreshToken("valid-refresh-token")
+                                .build();
+
+                when(authService.refresh(anyString())).thenReturn(response);
+
+                mockMvc.perform(post("/api/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.token").value("new-jwt-token"))
+                                .andExpect(jsonPath("$.refreshToken").value("valid-refresh-token"));
+        }
+
+        @Test
+        void refresh_InvalidToken_ReturnsBadRequest() throws Exception {
+                RefreshRequest request = RefreshRequest.builder()
+                                .refreshToken("invalid-token")
+                                .build();
+
+                when(authService.refresh(anyString()))
+                                .thenThrow(new BadRequestException("Refresh token inválido"));
+
+                mockMvc.perform(post("/api/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("Refresh token inválido"));
+        }
+
+        @Test
+        void logout_Success() throws Exception {
+                RefreshRequest request = RefreshRequest.builder()
+                                .refreshToken("valid-refresh-token")
+                                .build();
+
+                doNothing().when(authService).logout(anyString());
+
+                mockMvc.perform(post("/api/auth/logout")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk());
         }
 }

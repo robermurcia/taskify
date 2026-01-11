@@ -3,6 +3,7 @@ package com.taskify.auth.service;
 import com.taskify.auth.dto.AuthRequest;
 import com.taskify.auth.dto.AuthResponse;
 import com.taskify.auth.dto.RegisterRequest;
+import com.taskify.auth.model.RefreshToken;
 import com.taskify.exception.BadRequestException;
 import com.taskify.exception.ResourceNotFoundException;
 import com.taskify.user.model.User;
@@ -25,6 +26,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -39,10 +41,12 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String token = jwtService.generateToken(user.getId());
+        String token = jwtService.generateToken(user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken.getToken())
                 .build();
     }
 
@@ -59,10 +63,31 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        String token = jwtService.generateToken(user.getId());
+        String token = jwtService.generateToken(user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken.getToken())
                 .build();
+    }
+
+    public AuthResponse refresh(String refreshTokenStr) {
+        RefreshToken refreshToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
+
+        User user = userRepository.findById(refreshToken.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        String newAccessToken = jwtService.generateToken(user.getEmail());
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(refreshToken.getToken())
+                .build();
+    }
+
+    public void logout(String refreshTokenStr) {
+        RefreshToken refreshToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
+        refreshTokenService.deleteByUserId(refreshToken.getUserId());
     }
 }

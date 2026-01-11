@@ -4,6 +4,7 @@ import com.taskify.auth.dto.AuthRequest;
 import com.taskify.auth.dto.AuthResponse;
 import com.taskify.auth.dto.RegisterRequest;
 import com.taskify.auth.jwt.JwtService;
+import com.taskify.auth.model.RefreshToken;
 import com.taskify.exception.BadRequestException;
 import com.taskify.exception.ResourceNotFoundException;
 import com.taskify.user.model.User;
@@ -19,6 +20,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +39,8 @@ class AuthServiceTest {
     private JwtService jwtService;
     @Mock
     private AuthenticationManager authenticationManager;
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @InjectMocks
     private AuthService authService;
@@ -44,6 +48,7 @@ class AuthServiceTest {
     private RegisterRequest registerRequest;
     private AuthRequest authRequest;
     private User user;
+    private RefreshToken refreshToken;
 
     @BeforeEach
     void setUp() {
@@ -64,6 +69,13 @@ class AuthServiceTest {
                 .email("test@example.com")
                 .password("encodedPassword")
                 .build();
+
+        refreshToken = RefreshToken.builder()
+                .id("rt-1")
+                .token("refresh-token-uuid")
+                .userId("1")
+                .expiryDate(Instant.now().plusSeconds(604800))
+                .build();
     }
 
     @Test
@@ -76,12 +88,15 @@ class AuthServiceTest {
             savedUser.setId("1");
             return savedUser;
         });
+        when(refreshTokenService.createRefreshToken(anyString())).thenReturn(refreshToken);
 
         AuthResponse response = authService.register(registerRequest);
 
         assertNotNull(response);
         assertEquals("jwt-token", response.getToken());
+        assertEquals("refresh-token-uuid", response.getRefreshToken());
         verify(userRepository).save(any(User.class));
+        verify(refreshTokenService).createRefreshToken(anyString());
     }
 
     @Test
@@ -98,11 +113,13 @@ class AuthServiceTest {
                 new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword()));
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(jwtService.generateToken(anyString())).thenReturn("jwt-token");
+        when(refreshTokenService.createRefreshToken(anyString())).thenReturn(refreshToken);
 
         AuthResponse response = authService.login(authRequest);
 
         assertNotNull(response);
         assertEquals("jwt-token", response.getToken());
+        assertEquals("refresh-token-uuid", response.getRefreshToken());
     }
 
     @Test
@@ -119,5 +136,35 @@ class AuthServiceTest {
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> authService.login(authRequest));
+    }
+
+    @Test
+    void refresh_Success() {
+        when(refreshTokenService.verifyRefreshToken("refresh-token-uuid")).thenReturn(refreshToken);
+        when(userRepository.findById("1")).thenReturn(Optional.of(user));
+        when(jwtService.generateToken("test@example.com")).thenReturn("new-jwt-token");
+
+        AuthResponse response = authService.refresh("refresh-token-uuid");
+
+        assertNotNull(response);
+        assertEquals("new-jwt-token", response.getToken());
+        assertEquals("refresh-token-uuid", response.getRefreshToken());
+    }
+
+    @Test
+    void refresh_InvalidToken_ThrowsBadRequestException() {
+        when(refreshTokenService.verifyRefreshToken("invalid-token"))
+                .thenThrow(new BadRequestException("Refresh token inválido"));
+
+        assertThrows(BadRequestException.class, () -> authService.refresh("invalid-token"));
+    }
+
+    @Test
+    void logout_Success() {
+        when(refreshTokenService.verifyRefreshToken("refresh-token-uuid")).thenReturn(refreshToken);
+        doNothing().when(refreshTokenService).deleteByUserId("1");
+
+        assertDoesNotThrow(() -> authService.logout("refresh-token-uuid"));
+        verify(refreshTokenService).deleteByUserId("1");
     }
 }
