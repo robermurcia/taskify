@@ -50,7 +50,7 @@ public class TaskController {
                 .taskDate(created.getTaskDate())
                 .completed(created.isCompleted())
                 .priority(created.getPriority())
-                .repeatWeekly(created.isRepeatWeekly())
+                .repeatDays(created.getRepeatDays())
                 .createdAt(created.getCreatedAt())
                 .updatedAt(created.getUpdatedAt())
                 .build();
@@ -70,7 +70,7 @@ public class TaskController {
                 .taskDate(updated.getTaskDate())
                 .priority(updated.getPriority())
                 .completed(updated.isCompleted())
-                .repeatWeekly(updated.isRepeatWeekly())
+                .repeatDays(updated.getRepeatDays())
                 .createdAt(updated.getCreatedAt())
                 .updatedAt(updated.getUpdatedAt())
                 .build();
@@ -86,5 +86,11 @@ public class TaskController {
     @Operation(summary = "Completar/Descompletar tarea", description = "Marca una tarea como completada o pendiente")
     public Task complete(@PathVariable String id, @RequestParam boolean completed, Principal principal) {
         return service.toggleComplete(id, principal.getName(), completed);
+    }
+
+    @PutMapping("/{id}/exclude")
+    @Operation(summary = "Excluir fecha", description = "Excluye una fecha específica de una tarea recurrente")
+    public Task excludeDate(@PathVariable String id, @RequestParam String date, Principal principal) {
+        return service.excludeDate(id, principal.getName(), date);
     }
 }
