@@ -1,15 +1,13 @@
 <div class="home-container">
     @if (isAuthenticated) {
-    <!-- Usuario autenticado: aquí irán las tareas -->
+    <!-- Usuario autenticado: aquí van las tareas -->
     <header class="home-header">
         <h1>🎯 Taskify</h1>
         <button class="btn-logout" (click)="onLogout()">Cerrar sesión</button>
     </header>
 
     <main class="tasks-section">
-        <div class="tasks-placeholder">
-            <p>📝 Próximamente: Tu lista de tareas aparecerá aquí</p>
-        </div>
+        <app-task-list />
     </main>
     } @else {
     <!-- Usuario no autenticado: landing page -->
