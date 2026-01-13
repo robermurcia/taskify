@@ -14,12 +14,18 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "tasks")
 @CompoundIndexes({
-    @CompoundIndex(name = "uid_date_idx", def = "{'userId': 1, 'taskDate': 1}")
+        @CompoundIndex(name = "uid_date_idx", def = "{'userId': 1, 'taskDate': 1}")
 })
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Task {
 
     @Id
@@ -45,7 +51,10 @@ public class Task {
     private Priority priority = Priority.MEDIUM;
 
     @Builder.Default
-    private boolean repeatWeekly = false;
+    private List<String> repeatDays = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> excludedDates = new ArrayList<>();
 
     @CreatedDate
     private LocalDateTime createdAt;

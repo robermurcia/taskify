@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -15,7 +16,8 @@ public class TaskResponseDTO {
     private String taskDate;
     private boolean completed;
     private Priority priority;
-    private boolean repeatWeekly;
+    private List<String> repeatDays;
+    private List<String> excludedDates;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

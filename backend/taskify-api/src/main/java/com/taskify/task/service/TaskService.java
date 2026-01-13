@@ -51,7 +51,7 @@ public class TaskService {
                 .description(dto.getDescription())
                 .taskDate(dto.getTaskDate())
                 .priority(dto.getPriority())
-                .repeatWeekly(dto.isRepeatWeekly())
+                .repeatDays(dto.getRepeatDays())
                 .userId(userId)
                 .build();
 
@@ -70,7 +70,7 @@ public class TaskService {
         task.setDescription(dto.getDescription());
         task.setTaskDate(dto.getTaskDate());
         task.setPriority(dto.getPriority());
-        task.setRepeatWeekly(dto.isRepeatWeekly());
+        task.setRepeatDays(dto.getRepeatDays());
         return repository.save(task);
     }
 
@@ -94,6 +94,20 @@ public class TaskService {
         }
 
         task.setCompleted(completed);
+        return repository.save(task);
+    }
+
+    public Task excludeDate(String id, String userId, String date) {
+        Task task = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
+
+        if (!task.getUserId().equals(userId)) {
+            throw new ResourceNotFoundException("Task not found with id: " + id);
+        }
+
+        if (!task.getExcludedDates().contains(date)) {
+            task.getExcludedDates().add(date);
+        }
         return repository.save(task);
     }
 }
