@@ -1,52 +1,60 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, finalize, of, shareReplay, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { TokenService } from '../services/token.service';
-import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from './models/auth.models';
+import { AuthResponse, LoginRequest, RegisterRequest } from './models/auth.models';
 
-@Injectable({
-    providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-
     private readonly apiUrl = `${environment.apiUrl}/auth`;
+    private refreshRequest$?: Observable<AuthResponse>;
+    private sessionVersion = 0;
 
-    constructor(
-        private http: HttpClient,
-        private tokenService: TokenService
-    ) { }
+    constructor(private http: HttpClient, private tokens: TokenService) {}
 
     login(request: LoginRequest): Observable<AuthResponse> {
+        this.sessionVersion++;
         return this.http.post<AuthResponse>(`${this.apiUrl}/login`, request).pipe(
-            tap(response => this.tokenService.setTokens(response.token, response.refreshToken))
+            tap(response => this.tokens.setTokens(response.token, response.refreshToken))
         );
     }
 
     register(request: RegisterRequest): Observable<AuthResponse> {
+        this.sessionVersion++;
         return this.http.post<AuthResponse>(`${this.apiUrl}/register`, request).pipe(
-            tap(response => this.tokenService.setTokens(response.token, response.refreshToken))
+            tap(response => this.tokens.setTokens(response.token, response.refreshToken))
         );
     }
 
     refresh(): Observable<AuthResponse> {
-        const refreshToken = this.tokenService.getRefreshToken();
-        const request: RefreshRequest = { refreshToken: refreshToken! };
-
-        return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, request).pipe(
-            tap(response => this.tokenService.setTokens(response.token, response.refreshToken))
+        if (this.refreshRequest$) return this.refreshRequest$;
+        const refreshToken = this.tokens.getRefreshToken();
+        if (!refreshToken) return throwError(() => new Error('No hay sesión para renovar'));
+        const version = this.sessionVersion;
+        this.refreshRequest$ = this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, { refreshToken }).pipe(
+            tap(response => {
+                if (version !== this.sessionVersion || this.tokens.getRefreshToken() !== refreshToken) {
+                    throw new Error('La sesión ha cambiado');
+                }
+                this.tokens.setTokens(response.token, response.refreshToken);
+            }),
+            finalize(() => this.refreshRequest$ = undefined),
+            shareReplay({ bufferSize: 1, refCount: true })
         );
+        return this.refreshRequest$;
     }
 
     logout(): Observable<void> {
-        const refreshToken = this.tokenService.getRefreshToken();
-
-        return this.http.post<void>(`${this.apiUrl}/logout`, { refreshToken }).pipe(
-            tap(() => this.tokenService.clearTokens())
-        );
+        this.sessionVersion++;
+        const refreshToken = this.tokens.getRefreshToken();
+        const request$ = refreshToken
+            ? this.http.post<void>(`${this.apiUrl}/logout`, { refreshToken })
+            : of(undefined);
+        return request$.pipe(finalize(() => this.tokens.clearTokens()));
     }
 
     isAuthenticated(): boolean {
-        return this.tokenService.isAuthenticated();
+        return this.tokens.isAuthenticated();
     }
 }
