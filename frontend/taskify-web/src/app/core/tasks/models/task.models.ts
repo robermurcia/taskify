@@ -13,12 +13,12 @@ export interface TaskRequest {
 export interface Task {
     id: string;
     title: string;
-    description?: string;
-    taskDate?: string;
+    description?: string | null;
+    taskDate?: string | null;
     completed: boolean;
     priority: Priority;
-    repeatDays: DayOfWeek[];
-    excludedDates: string[];
+    repeatDays: DayOfWeek[] | null;
+    excludedDates: string[] | null;
     createdAt: string;
     updatedAt: string;
 }

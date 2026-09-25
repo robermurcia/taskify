@@ -1,8 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Page, Task, TaskRequest } from './models/task.models';
+import { Page, Priority, Task, TaskRequest } from './models/task.models';
 
 @Injectable({
     providedIn: 'root'
@@ -13,10 +13,11 @@ export class TaskService {
 
     constructor(private http: HttpClient) { }
 
-    list(completed?: boolean, priority?: string, page = 0, size = 20): Observable<Page<Task>> {
+    list(completed?: boolean, priority?: Priority, page = 0, size = 50): Observable<Page<Task>> {
         let params = new HttpParams()
             .set('page', page)
-            .set('size', size);
+            .set('size', size)
+            .set('sort', 'id,asc');
 
         if (completed !== undefined) {
             params = params.set('completed', completed);
@@ -26,6 +27,16 @@ export class TaskService {
         }
 
         return this.http.get<Page<Task>>(this.apiUrl, { params });
+    }
+
+    // No date-range/recurrence query exists: read every bounded page before filtering.
+    listAll(): Observable<Task[]> {
+        return this.list().pipe(
+            expand(page => page.last || page.number + 1 >= page.totalPages
+                ? EMPTY : this.list(undefined, undefined, page.number + 1)),
+            reduce((tasks, page) => tasks.concat(page.content), [] as Task[]),
+            map(tasks => [...new Map(tasks.map(task => [task.id, task])).values()])
+        );
     }
 
     listToday(page = 0, size = 20): Observable<Page<Task>> {
