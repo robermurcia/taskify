@@ -1,0 +1,29 @@
+<app-modal [title]="task ? 'Editar tarea' : 'Una cosa menos en tu cabeza'" [busy]="saving" (dismiss)="dismiss.emit()">
+    <form [formGroup]="form" (ngSubmit)="submit()">
+        <fieldset [disabled]="saving">
+            <div class="field"><label for="task-title">Título <span class="muted">· obligatorio</span></label>
+                <input id="task-title" autofocus formControlName="title" maxlength="60" placeholder="¿Qué tienes pendiente?" aria-describedby="title-help" [attr.aria-invalid]="form.controls.title.invalid && form.controls.title.touched">
+                <small id="title-help" [class.field-error]="form.controls.title.invalid && form.controls.title.touched">Escribe un título de 1 a 60 caracteres. {{ form.controls.title.value.length }}/60</small>
+            </div>
+            <div class="field"><label for="task-description">Descripción <span class="muted">· opcional</span></label>
+                <textarea id="task-description" formControlName="description" maxlength="500" rows="3" placeholder="Añade los detalles que te ayuden" aria-describedby="description-help"></textarea>
+                <small id="description-help">{{ form.controls.description.value.length }}/500 caracteres</small>
+            </div>
+            <div class="form-row">
+                <div class="field"><label for="task-date">Fecha</label><input id="task-date" type="date" formControlName="taskDate" required>
+                    @if (form.controls.taskDate.invalid && form.controls.taskDate.touched) { <small class="field-error">Selecciona una fecha.</small> }
+                </div>
+                <div class="field"><label for="task-priority">Prioridad</label><select id="task-priority" formControlName="priority"><option value="LOW">Baja</option><option value="MEDIUM">Media</option><option value="HIGH">Alta</option></select></div>
+            </div>
+            <fieldset class="recurrence"><legend>Repetir cada semana</legend><div class="weekdays">
+                @for (day of weekdays; track day.value) {
+                    <button type="button" [class.selected]="form.controls.repeatDays.value.includes(day.value)" [attr.aria-pressed]="form.controls.repeatDays.value.includes(day.value)" [attr.aria-label]="day.label" (click)="toggleDay(day.value)">{{ day.short }}</button>
+                }
+            </div><small>Sin días seleccionados, la tarea ocurre solo en su fecha.</small></fieldset>
+            @if (form.controls.repeatDays.value.length) { <p class="hint">La fecha y los días semanales se suman. Completar o editar esta tarea afecta a toda la serie.</p> }
+            @if (task?.excludedDates?.length) { <p class="hint">Se conservan las {{ task?.excludedDates?.length }} fechas omitidas de esta tarea.</p> }
+        </fieldset>
+        @if (error) { <p class="notice error" role="alert">{{ error }}</p> }
+        <footer class="modal-actions"><button type="button" class="button" [disabled]="saving" (click)="dismiss.emit()">Cancelar</button><button class="button primary" type="submit" [disabled]="saving || form.invalid">{{ saving ? 'Guardando…' : task ? 'Guardar cambios' : 'Crear tarea' }}</button></footer>
+    </form>
+</app-modal>
