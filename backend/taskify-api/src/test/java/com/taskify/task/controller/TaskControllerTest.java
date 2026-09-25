@@ -61,6 +61,7 @@ class TaskControllerTest {
                                 .taskDate(LocalDate.now().toString())
                                 .priority(Priority.LOW)
                                 .userId("user")
+                                .excludedDates(java.util.List.of("2026-09-24"))
                                 .build();
 
                 taskRequestDTO = TaskRequestDTO.builder()
@@ -90,7 +91,8 @@ class TaskControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(taskRequestDTO)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.title").value("Test Task"));
+                                .andExpect(jsonPath("$.title").value("Test Task"))
+                                .andExpect(jsonPath("$.excludedDates[0]").value("2026-09-24"));
         }
 
         @Test
@@ -114,7 +116,8 @@ class TaskControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(taskRequestDTO)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.title").value("Test Task"));
+                                .andExpect(jsonPath("$.title").value("Test Task"))
+                                .andExpect(jsonPath("$.excludedDates[0]").value("2026-09-24"));
         }
 
         @Test

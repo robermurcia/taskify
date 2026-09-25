@@ -51,6 +51,7 @@ public class TaskController {
                 .completed(created.isCompleted())
                 .priority(created.getPriority())
                 .repeatDays(created.getRepeatDays())
+                .excludedDates(created.getExcludedDates())
                 .createdAt(created.getCreatedAt())
                 .updatedAt(created.getUpdatedAt())
                 .build();
@@ -71,6 +72,7 @@ public class TaskController {
                 .priority(updated.getPriority())
                 .completed(updated.isCompleted())
                 .repeatDays(updated.getRepeatDays())
+                .excludedDates(updated.getExcludedDates())
                 .createdAt(updated.getCreatedAt())
                 .updatedAt(updated.getUpdatedAt())
                 .build();
