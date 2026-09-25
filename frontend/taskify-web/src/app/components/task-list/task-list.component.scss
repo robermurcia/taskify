@@ -1,0 +1,29 @@
+.workspace { max-width: 1000px; margin: auto; }
+.intro { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+.intro h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); letter-spacing: -.045em; margin: .5rem 0 .65rem; }
+.intro p { font-size: .9rem; }
+.tasks { margin-top: 2rem; }
+.day-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+.day-heading h2 { font-size: 1.1rem; margin-top: .4rem; text-transform: capitalize; }
+.summary { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.status-filters { display: flex; gap: .2rem; padding: .2rem; background: #eaeef4; border-radius: var(--radius); }
+.status-filters button { min-height: 40px; padding: .5rem .9rem; border-radius: 6px; color: var(--muted); font-size: .8rem; }
+.status-filters .active { background: white; color: var(--ink); box-shadow: 0 1px 3px #18203912; }
+.priority-filter { display: flex; align-items: center; gap: .65rem; font-size: .8rem; color: var(--muted); }
+.priority-filter select { width: auto; min-height: 44px; padding: .5rem 1.7rem .5rem .6rem; }
+.feedback { min-height: 2rem; padding: .5rem 0; font-size: .8rem; color: var(--success); }
+.task-list { display: grid; gap: .65rem; list-style: none; padding: 0; }
+.delete-title { font-weight: 600; overflow-wrap: anywhere; margin-bottom: .5rem; }
+.delete-options { display: grid; gap: .75rem; margin-top: 1.5rem; }
+.delete-options button { display: grid; text-align: left; justify-content: start; padding: 1rem; }
+.delete-options small { color: inherit; font-weight: 400; }
+@media (max-width: 640px) {
+    .intro { align-items: flex-start; flex-direction: column; }
+    .intro .button { width: 100%; }
+    .day-heading { align-items: flex-start; flex-direction: column; gap: .5rem; }
+    .toolbar { flex-wrap: wrap; gap: .7rem; }
+    .status-filters { width: 100%; }
+    .status-filters button { flex: 1; padding-inline: .4rem; }
+    .priority-filter { margin-left: auto; }
+}

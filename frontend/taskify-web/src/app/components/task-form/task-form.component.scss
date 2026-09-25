@@ -1,0 +1,9 @@
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.recurrence { margin: .5rem 0 1rem; }
+.recurrence legend { font-size: .875rem; font-weight: 600; margin-bottom: .65rem; }
+.weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: .35rem; margin-bottom: .5rem; }
+.weekdays button { min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius); }
+.weekdays button:hover { background: var(--canvas); }
+.weekdays button.selected { color: white; background: var(--accent); border-color: var(--accent); }
+.hint { font-size: .8rem; color: var(--muted); margin-top: .75rem; }
+@media (max-width: 380px) { .form-row { grid-template-columns: 1fr; gap: 0; } }

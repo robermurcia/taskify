@@ -1,0 +1,5 @@
+dialog { margin: auto; padding: 1.75rem; width: min(560px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--ink); background: var(--surface); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgb(21 28 46 / 45%); backdrop-filter: blur(3px); }
+.modal-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+h2 { font-size: 1.35rem; }
+@media (max-width: 480px) { dialog { padding: 1.25rem; } }
