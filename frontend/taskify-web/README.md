@@ -22,6 +22,23 @@ npm test -- --watch=false --browsers=ChromeHeadless
 El build de producción se guarda en `dist/taskify-web/browser`.
 Producción usa `/api`: configurar el servidor para dirigir ese prefijo al backend y servir `index.html` para las rutas Angular. Desarrollo usa la URL de `src/environments/environment.ts`.
 
+## Despliegue en Vercel
+
+Importar `robermurcia/taskify` y usar la rama de producción `main`:
+
+| Campo | Valor |
+| --- | --- |
+| Root Directory | `frontend/taskify-web` |
+| Framework Preset | `Angular` |
+| Install Command | `npm ci` |
+| Build Command | `npm run build` |
+| Output Directory | `dist/taskify-web/browser` |
+| Variables de entorno del frontend | Ninguna |
+
+`vercel.json` fija estos comandos y el directorio real del builder Angular `application`. Primero reenvía `/api/:path*` a `https://taskify-api-k6vs.onrender.com/api/:path*`; después sirve `index.html` para las rutas Angular, permitiendo recargar `/login` o `/register`. Los archivos estáticos existentes se sirven normalmente.
+
+En Render, configurar `CORS_ALLOWED_ORIGINS` con el origen HTTPS exacto asignado por Vercel, sin barra final. Configurar también una `SECRET_KEY` Base64 de al menos 32 bytes aleatorios según el README del backend. Nunca poner `SECRET_KEY` ni `MONGO_URI` en Vercel o en el código frontend. Los dominios de preview necesitan autorización explícita en CORS si se van a usar.
+
 ## Responsabilidades
 
 - `core/auth`: contrato de autenticación, guard y JWT interceptor.

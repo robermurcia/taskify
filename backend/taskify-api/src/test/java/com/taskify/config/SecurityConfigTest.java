@@ -12,15 +12,28 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TaskController.class)
 @Import({SecurityConfig.class, JwtFilter.class, JwtService.class})
 class SecurityConfigTest {
+    private static final String TEST_SECRET = java.util.Base64.getEncoder().encodeToString(
+            io.jsonwebtoken.security.Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256).getEncoded());
+
+    @DynamicPropertySource
+    static void jwtProperties(DynamicPropertyRegistry registry) {
+        registry.add("jwt.secret", () -> TEST_SECRET);
+        registry.add("cors.allowed-origins", () -> "http://localhost:4200, https://taskify-test.vercel.app");
+    }
+
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwt;
     @MockitoBean private TaskService tasks;
@@ -31,6 +44,17 @@ class SecurityConfigTest {
         mvc.perform(get("/api/tasks")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/tasks").header("Authorization", "Bearer invalid"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void permitsConfiguredVercelOriginAndRejectsOtherOrigins() throws Exception {
+        mvc.perform(options("/api/tasks").header("Origin", "https://taskify-test.vercel.app")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "https://taskify-test.vercel.app"));
+        mvc.perform(options("/api/tasks").header("Origin", "https://untrusted.example")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
