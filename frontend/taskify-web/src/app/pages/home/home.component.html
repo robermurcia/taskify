@@ -1,24 +1,7 @@
-<div class="home-container">
-    @if (isAuthenticated) {
-    <!-- Usuario autenticado: aquí van las tareas -->
-    <header class="home-header">
-        <h1>🎯 Taskify</h1>
-        <button class="btn-logout" (click)="onLogout()">Cerrar sesión</button>
-    </header>
-
-    <main class="tasks-section">
-        <app-task-list />
-    </main>
-    } @else {
-    <!-- Usuario no autenticado: landing page -->
-    <div class="landing">
-        <h1>🎯 Taskify</h1>
-        <p class="subtitle">Organiza tu vida, una tarea a la vez</p>
-
-        <div class="auth-buttons">
-            <a routerLink="/login" class="btn btn-primary">Iniciar Sesión</a>
-            <a routerLink="/register" class="btn btn-secondary">Crear Cuenta</a>
-        </div>
-    </div>
-    }
-</div>
+<a class="skip-link" href="#main">Ir a mis tareas</a>
+<header class="app-header"><div class="header-inner">
+    <a class="brand" routerLink="/" aria-label="Taskify, inicio"><span class="brand-mark"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 4 4 8-9" /></svg></span>Taskify</a>
+    <div class="account"><span class="email" [title]="email">{{ email || 'Mi cuenta' }}</span><button class="button subtle" [disabled]="loggingOut" (click)="onLogout()"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 4H4v16h5m6-12 4 4-4 4M9 12h10" /></svg>{{ loggingOut ? 'Cerrando…' : 'Salir' }}</button></div>
+</div></header>
+<main id="main" tabindex="-1" class="main"><app-task-list /></main>
+<footer class="app-footer">Taskify <span>Menos ruido. Más espacio para ti.</span></footer>

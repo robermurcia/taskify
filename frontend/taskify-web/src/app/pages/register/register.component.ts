@@ -1,45 +1,40 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 
-@Component({
-    selector: 'app-register',
-    standalone: true,
-    imports: [ReactiveFormsModule, RouterLink],
-    templateUrl: './register.component.html',
-    styleUrls: ['./register.component.scss']
-})
+@Component({ selector: 'app-register', standalone: true, imports: [ReactiveFormsModule, RouterLink],
+    templateUrl: './register.component.html', styleUrl: './register.component.scss' })
 export class RegisterComponent {
-    form: FormGroup;
+    private readonly auth = inject(AuthService);
+    private readonly router = inject(Router);
+    private readonly destroyRef = inject(DestroyRef);
+    readonly reason = inject(ActivatedRoute).snapshot.queryParamMap.get('reason');
+    readonly form = inject(FormBuilder).nonNullable.group({
+        name: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(60)]],
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.pattern(/\S/), Validators.minLength(6)]]
+    });
     error = '';
     loading = false;
 
-    constructor(
-        private fb: FormBuilder,
-        private authService: AuthService,
-        private router: Router
-    ) {
-        this.form = this.fb.group({
-            name: ['', [Validators.required, Validators.maxLength(60)]],
-            email: ['', [Validators.required, Validators.email]],
-            password: ['', [Validators.required, Validators.minLength(6)]]
-        });
-    }
-
     onSubmit(): void {
-        if (this.form.invalid) return;
-
+        this.form.markAllAsTouched();
+        if (this.form.invalid || this.loading) return;
         this.loading = true;
         this.error = '';
-
-        this.authService.register(this.form.value).subscribe({
-            next: () => {
-                this.router.navigate(['/']);
-            },
-            error: (err) => {
-                this.error = err.error?.message || 'Error al registrarse';
-                this.loading = false;
+        const value = this.form.getRawValue();
+        this.auth.register({ ...value, email: value.email.trim(), name: value.name.trim() }).pipe(
+            takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)
+        ).subscribe({
+            next: () => { void this.router.navigate(['/']); },
+            error: (error: unknown) => {
+                this.error = error instanceof HttpErrorResponse && error.status === 0
+                    ? 'No se ha podido conectar. Comprueba tu conexión y vuelve a intentarlo.'
+                    : error instanceof HttpErrorResponse && error.status === 400 ? 'No se pudo crear la cuenta. Comprueba los datos o inicia sesión si ya estás registrado.' : 'No pudimos crear tu cuenta. Inténtalo de nuevo.';
             }
         });
     }

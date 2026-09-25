@@ -1,0 +1,14 @@
+:host { display: block; }
+.auth-shell { display: grid; grid-template-columns: 1fr 1fr; min-height: 100dvh; }
+.auth-story { background: #eef0f8; padding: clamp(2rem, 6vw, 6rem); display: flex; flex-direction: column; justify-content: space-between; gap: 3rem; }
+.story-content { max-width: 450px; }
+.story-content h2 { font-size: clamp(2.2rem, 4vw, 3.6rem); font-weight: 600; letter-spacing: -.055em; margin: 1rem 0 1.5rem; line-height: 1.1; }
+.story-content p { color: var(--muted); max-width: 350px; }
+.story-note { font-size: .75rem; color: var(--muted); }
+.auth-main { padding: 3rem 1.5rem; display: grid; place-items: center; background: var(--surface); }
+.auth-card { width: 100%; max-width: 380px; }
+.auth-card h1 { font-size: 1.9rem; letter-spacing: -.04em; margin: .65rem 0; }
+.subtitle { font-size: .9rem; margin-bottom: 2rem; color: var(--muted); }
+.auth-card form > .button { width: 100%; margin-top: .5rem; }
+.auth-link { font-size: .85rem; text-align: center; margin-top: 1.5rem; color: var(--muted); }
+@media (max-width: 760px) { .auth-shell { grid-template-columns: 1fr; } .auth-story { padding: 1.5rem; gap: 1rem; } .story-content, .story-note { display: none; } .auth-main { padding: 2rem 1.5rem 3rem; align-items: start; } }

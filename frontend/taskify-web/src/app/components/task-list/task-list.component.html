@@ -1,179 +1,55 @@
-<div class="task-container">
-    <!-- Selector de días (calendario horizontal) -->
-    <div class="day-selector-wrapper">
-        <button class="nav-arrow" [disabled]="!canGoPrev" (click)="prevWeek()" title="Semana anterior">
-            ‹
-        </button>
-
-        <div class="day-selector">
-            @for (day of visibleDays; track day.dateStr) {
-            <button class="day-item" [class.selected]="selectedDay?.dateStr === day.dateStr" [class.today]="day.isToday"
-                (click)="selectDay(day)">
-                <span class="day-name">{{ day.dayName }}</span>
-                <span class="day-number">{{ day.dayNumber }}</span>
-                <span class="day-month">{{ day.monthShort }}</span>
-                @if (getTaskCountForDay(day) > 0) {
-                <span class="task-badge">{{ getTaskCountForDay(day) }}</span>
-                }
-            </button>
-            }
+<section class="workspace" aria-labelledby="workspace-title">
+    <div class="intro"><div><p class="eyebrow">TU ESPACIO PERSONAL</p><h1 id="workspace-title">{{ heading }}</h1><p class="muted">Haz espacio para lo que importa. Una tarea a la vez.</p></div>
+        <button class="button primary" [disabled]="loading || !!loadError" (click)="openForm()"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>Nueva tarea</button>
+    </div>
+    <app-day-selector [selected]="selectedDate" [counts]="dayCounts" (selectDate)="selectDate($event)" />
+    <section class="tasks" aria-labelledby="day-heading" [attr.aria-busy]="loading">
+        <div class="day-heading"><div><p class="eyebrow">TU AGENDA</p><h2 id="day-heading">{{ selectedLabel }}</h2></div>
+            @if (!loading && !loadError) { <span class="summary">{{ completedCount }} de {{ dayTasks.length }} completadas</span> }
         </div>
-
-        <button class="nav-arrow" [disabled]="!canGoNext" (click)="nextWeek()" title="Semana siguiente">
-            ›
-        </button>
-    </div>
-
-    <!-- Header -->
-    <div class="task-header">
-        <h2>
-            @if (selectedDay?.isToday) {
-            Tareas de Hoy
-            } @else {
-            {{ selectedDay?.dayName }} {{ selectedDay?.dayNumber }}/{{ selectedDay?.monthShort }}
+        <div class="toolbar">
+            <div class="status-filters" aria-label="Filtrar por estado">
+                <button [class.active]="statusFilter === 'all'" [attr.aria-pressed]="statusFilter === 'all'" (click)="setStatus('all')">Todas</button>
+                <button [class.active]="statusFilter === 'pending'" [attr.aria-pressed]="statusFilter === 'pending'" (click)="setStatus('pending')">Pendientes</button>
+                <button [class.active]="statusFilter === 'completed'" [attr.aria-pressed]="statusFilter === 'completed'" (click)="setStatus('completed')">Completadas</button>
+            </div>
+            <div class="priority-filter"><label for="priority-filter">Prioridad</label><select id="priority-filter" [(ngModel)]="priorityFilter" (ngModelChange)="currentPage = 1"><option value="all">Todas</option><option value="HIGH">Alta</option><option value="MEDIUM">Media</option><option value="LOW">Baja</option></select></div>
+        </div>
+        <div class="feedback" role="status">{{ feedback }}</div>
+        @if (actionError) { <p class="notice error" role="alert">{{ actionError }}</p> }
+        @if (loading) {
+            <div class="loading-state" role="status"><span class="spinner"></span>Preparando tu agenda…</div>
+        } @else if (loadError) {
+            <div class="empty-state"><h3>No podemos mostrar tu agenda</h3><p role="alert">{{ loadError }}</p><button class="button" (click)="loadTasks()">Volver a intentar</button></div>
+        } @else if (filteredTasks.length === 0) {
+            <div class="empty-state"><div class="empty-mark"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3" /><path d="M8 3v4m8-4v4M4 10h16m-12 5 3 3 5-5" /></svg></div>
+                <h3>{{ dayTasks.length ? 'Sin tareas con estos filtros' : 'Un día lleno de posibilidades' }}</h3>
+                <p>{{ dayTasks.length ? 'Prueba otro estado o prioridad para ver el resto de tus tareas.' : 'Añade tu primera tarea y dale un poco de orden al día.' }}</p>
+                @if (!dayTasks.length) { <button class="button" (click)="openForm()">Añadir una tarea</button> }
+            </div>
+        } @else {
+            <ul class="task-list">@for (task of visibleTasks; track task.id) {
+                <li><app-task-item [task]="task" [busy]="pendingIds.has(task.id)" (toggle)="toggleComplete(task)" (edit)="openForm(task)" (remove)="deleteTask(task)" /></li>
+            }</ul>
+            @if (totalPages > 1) {
+                <nav class="pagination" aria-label="Páginas de tareas"><button class="button" [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">Anterior</button><span>Página {{ currentPage }} de {{ totalPages }}</span><button class="button" [disabled]="currentPage === totalPages" (click)="currentPage = currentPage + 1">Siguiente</button></nav>
             }
-        </h2>
-        <button class="btn-add" (click)="openForm()">+ Nueva Tarea</button>
-    </div>
-
-    <!-- Error -->
-    @if (error) {
-    <div class="error-message">{{ error }}</div>
-    }
-
-    <!-- Loading -->
-    @if (loading) {
-    <div class="loading">Cargando tareas...</div>
-    }
-
-    <!-- Lista de tareas -->
-    @if (!loading && filteredTasks.length === 0) {
-    <div class="empty-state">
-        <p>📝 No hay tareas para este día</p>
-        <button class="btn-add" (click)="openForm()">Añadir tarea</button>
-    </div>
-    }
-
-    <ul class="task-list">
-        @for (task of filteredTasks; track task.id) {
-        <li class="task-item" [class.completed]="task.completed">
-            <div class="task-check">
-                <input type="checkbox" [checked]="task.completed" (change)="toggleComplete(task)">
-            </div>
-
-            <div class="task-content">
-                <span class="task-title">{{ task.title }}</span>
-                @if (task.description) {
-                <span class="task-description">{{ task.description }}</span>
-                }
-                <div class="task-meta">
-                    <span class="priority priority-{{ task.priority | lowercase }}">
-                        {{ getPriorityLabel(task.priority) }}
-                    </span>
-                </div>
-            </div>
-
-            <div class="task-actions">
-                <button class="btn-icon" (click)="editTask(task)" title="Editar">✏️</button>
-                <button class="btn-icon" (click)="deleteTask(task)" title="Eliminar">🗑️</button>
-            </div>
-        </li>
         }
-    </ul>
-
-    <!-- Modal de formulario -->
-    @if (showForm) {
-    <div class="modal-overlay" (click)="closeForm()">
-        <div class="modal" (click)="$event.stopPropagation()">
-            <h3>{{ editingTask ? 'Editar Tarea' : 'Nueva Tarea' }}</h3>
-
-            <form (ngSubmit)="saveTask()">
-                <div class="form-group">
-                    <label for="title">Título *</label>
-                    <input type="text" id="title" [(ngModel)]="newTask.title" name="title"
-                        placeholder="¿Qué necesitas hacer?" maxlength="60">
-                </div>
-
-                <div class="form-group">
-                    <label for="description">Descripción</label>
-                    <textarea id="description" [(ngModel)]="newTask.description" name="description"
-                        placeholder="Detalles adicionales..." maxlength="500" rows="3"></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="priority">Prioridad</label>
-                        <select id="priority" [(ngModel)]="newTask.priority" name="priority">
-                            <option value="HIGH">🔴 Alta</option>
-                            <option value="MEDIUM">🟡 Media</option>
-                            <option value="LOW">🟢 Baja</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="taskDate">Fecha</label>
-                        <input type="date" id="taskDate" [(ngModel)]="newTask.taskDate" name="taskDate">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Repetir los días:</label>
-                    <div class="repeat-days">
-                        <button type="button" class="day-btn" [class.selected]="isRepeatDaySelected('MONDAY')"
-                            (click)="toggleRepeatDay('MONDAY')">L</button>
-                        <button type="button" class="day-btn" [class.selected]="isRepeatDaySelected('TUESDAY')"
-                            (click)="toggleRepeatDay('TUESDAY')">M</button>
-                        <button type="button" class="day-btn" [class.selected]="isRepeatDaySelected('WEDNESDAY')"
-                            (click)="toggleRepeatDay('WEDNESDAY')">X</button>
-                        <button type="button" class="day-btn" [class.selected]="isRepeatDaySelected('THURSDAY')"
-                            (click)="toggleRepeatDay('THURSDAY')">J</button>
-                        <button type="button" class="day-btn" [class.selected]="isRepeatDaySelected('FRIDAY')"
-                            (click)="toggleRepeatDay('FRIDAY')">V</button>
-                        <button type="button" class="day-btn" [class.selected]="isRepeatDaySelected('SATURDAY')"
-                            (click)="toggleRepeatDay('SATURDAY')">S</button>
-                        <button type="button" class="day-btn" [class.selected]="isRepeatDaySelected('SUNDAY')"
-                            (click)="toggleRepeatDay('SUNDAY')">D</button>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
-                    <button type="submit" class="btn-primary" [disabled]="!newTask.title.trim() || saving">
-                        {{ saving ? 'Guardando...' : (editingTask ? 'Actualizar' : 'Crear') }}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-    }
-
-    <!-- Modal de confirmación de eliminación -->
-    @if (showDeleteModal) {
-    <div class="modal-overlay" (click)="closeDeleteModal()">
-        <div class="modal delete-modal" (click)="$event.stopPropagation()">
-            <h3>¿Cómo quieres eliminar esta tarea?</h3>
-            <p class="task-name">{{ taskToDelete?.title }}</p>
-
-            <div class="delete-options">
-                <button class="delete-option" (click)="excludeThisDate()">
-                    <span class="option-icon">📅</span>
-                    <span class="option-text">
-                        <strong>Solo este día</strong>
-                        <small>La tarea seguirá apareciendo otros días</small>
-                    </span>
-                </button>
-
-                <button class="delete-option delete-all" (click)="confirmDeleteAll()">
-                    <span class="option-icon">🗑️</span>
-                    <span class="option-text">
-                        <strong>Eliminar toda la tarea</strong>
-                        <small>Se eliminará de todos los días</small>
-                    </span>
-                </button>
-            </div>
-
-            <button class="btn-secondary btn-cancel" (click)="closeDeleteModal()">Cancelar</button>
-        </div>
-    </div>
-    }
-</div>
+    </section>
+</section>
+@if (showForm) { <app-task-form [task]="editingTask" [selectedDate]="selectedDate" [saving]="saving" [error]="formError" (save)="saveTask($event)" (dismiss)="closeForm()" /> }
+@if (taskToDelete) {
+    <app-modal title="¿Eliminar esta tarea?" [busy]="deleting" (dismiss)="closeDelete()">
+        <p class="delete-title">{{ taskToDelete.title }}</p>
+        <p class="muted">Esta acción no se puede deshacer.</p>
+        @if (taskToDelete.repeatDays?.length) {
+            <div class="delete-options"><button class="button" [disabled]="deleting" (click)="confirmDelete(true)">Solo el día seleccionado <small>{{ selectedLabel }}</small></button>
+                <button class="button danger" [disabled]="deleting" (click)="confirmDelete()">Eliminar toda la serie <small>Se eliminará de todos los días</small></button></div>
+        }
+        @if (deleteError) { <p class="notice error" role="alert">{{ deleteError }}</p> }
+        @if (deleting) { <p role="status">Guardando cambios…</p> }
+        <footer class="modal-actions"><button class="button" autofocus [disabled]="deleting" (click)="closeDelete()">Cancelar</button>
+            @if (!taskToDelete.repeatDays?.length) { <button class="button danger" [disabled]="deleting" (click)="confirmDelete()">{{ deleting ? 'Eliminando…' : 'Eliminar tarea' }}</button> }
+        </footer>
+    </app-modal>
+}
