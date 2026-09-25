@@ -27,6 +27,8 @@ docker run --rm -p 10000:10000 --env-file .env -e PORT=10000 taskify-api
 
 MongoDB must allow connections from the deployment environment. Existing API security remains unchanged: protected endpoints return 401 without authentication. Do not configure a protected route as an HTTP health check.
 
-Existing authentication limitation: `application.properties` receives `SECRET_KEY` as `jwt.secret`, but `JwtService` currently generates a random signing key at startup instead of using that property. This deployment change preserves that behavior; access tokens are invalidated on restart and are not shared across instances. Address persistent signing keys separately before relying on multiple instances.
+`SECRET_KEY` must be standard Base64 encoding of at least 32 random bytes. Generate it privately, for example with `openssl rand -base64 32`, and save the output only in Render's environment settings (or your ignored local `.env`). Startup fails with a clear error if the value is missing, malformed, or too short. Keep the same value across restarts and instances. The switch from the previous random signing key invalidates existing access tokens; subsequent restarts preserve valid tokens. Update an incompatible existing Render value before deploying this version.
+
+Set `CORS_ALLOWED_ORIGINS` in Render to your exact frontend origin, such as `https://your-project.vercel.app`, without a trailing slash. Multiple trusted origins can be comma-separated; the default is `http://localhost:4200`. This allows requests whose Origin header is forwarded by the Vercel proxy. Add custom domains explicitly instead of allowing every preview domain.
 
 References: [Render Docker services](https://render.com/docs/docker), [port binding](https://render.com/docs/web-services#port-binding).
