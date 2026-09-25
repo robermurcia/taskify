@@ -1,0 +1,32 @@
+# Deploy the API on Render
+
+Create a Docker Web Service with these settings:
+
+- Root Directory: `backend/taskify-api`
+- Dockerfile Path: `./Dockerfile`
+- Docker Build Context: `.`
+- Docker Command: leave empty to use the image entrypoint.
+- Environment variables: set `MONGO_URI` and `SECRET_KEY` in Render, never in Git or the Dockerfile.
+
+Spring listens on `0.0.0.0` and uses Render's `PORT`, falling back to `8080` locally. `EXPOSE 8080` documents the local default; it does not override `PORT`.
+
+The build stage uses Maven and Java 17 and runs the tests before packaging. The runtime stage contains the Java 17 JRE and the executable JAR, running as a non-root user. `.env` files and local build output are excluded from the Docker context; no environment file is needed to build the image.
+
+From this directory:
+
+```sh
+docker build -t taskify-api .
+docker run --rm -p 8080:8080 --env-file .env taskify-api
+```
+
+To check a different port:
+
+```sh
+docker run --rm -p 10000:10000 --env-file .env -e PORT=10000 taskify-api
+```
+
+MongoDB must allow connections from the deployment environment. Existing API security remains unchanged: protected endpoints return 401 without authentication. Do not configure a protected route as an HTTP health check.
+
+Existing authentication limitation: `application.properties` receives `SECRET_KEY` as `jwt.secret`, but `JwtService` currently generates a random signing key at startup instead of using that property. This deployment change preserves that behavior; access tokens are invalidated on restart and are not shared across instances. Address persistent signing keys separately before relying on multiple instances.
+
+References: [Render Docker services](https://render.com/docs/docker), [port binding](https://render.com/docs/web-services#port-binding).
