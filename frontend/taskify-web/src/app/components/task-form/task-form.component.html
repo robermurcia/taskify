@@ -24,6 +24,7 @@
             @if (task?.excludedDates?.length) { <p class="hint">Se conservan las {{ task?.excludedDates?.length }} fechas omitidas de esta tarea.</p> }
         </fieldset>
         @if (error) { <p class="notice error" role="alert">{{ error }}</p> }
+        @if (saving) { <p role="status">Guardando… Si la demo estaba inactiva, el servidor puede tardar alrededor de un minuto en arrancar.</p> }
         <footer class="modal-actions"><button type="button" class="button" [disabled]="saving" (click)="dismiss.emit()">Cancelar</button><button class="button primary" type="submit" [disabled]="saving || form.invalid">{{ saving ? 'Guardando…' : task ? 'Guardar cambios' : 'Crear tarea' }}</button></footer>
     </form>
 </app-modal>

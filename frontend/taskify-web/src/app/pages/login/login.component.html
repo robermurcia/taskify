@@ -8,6 +8,7 @@
     @if (reason === 'expired') { <p class="notice" role="status">Tu sesión ha caducado. Inicia sesión de nuevo.</p> }
     @if (reason === 'logout-failed') { <p class="notice" role="status">Has salido en este dispositivo, pero no pudimos confirmar la revocación en el servidor.</p> }
     @if (error) { <p class="notice error" role="alert">{{ error }}</p> }
+    @if (loading) { <p class="notice" role="status">Conectando… Si la demo estaba inactiva, el servidor puede tardar alrededor de un minuto en arrancar.</p> }
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <fieldset [disabled]="loading">
 

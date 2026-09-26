@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import com.taskify.task.dto.TaskPageResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,18 +25,18 @@ public class TaskController {
 
     @GetMapping
     @Operation(summary = "Listar tareas", description = "Devuelve tareas con paginación, ordenación y filtros opcionales (completed, priority)")
-    public Page<Task> list(
+    public TaskPageResponse<Task> list(
             Principal principal,
             @RequestParam(required = false) Boolean completed,
             @RequestParam(required = false) String priority,
             Pageable pageable) {
-        return service.list(principal.getName(), completed, priority, pageable);
+        return TaskPageResponse.from(service.list(principal.getName(), completed, priority, pageable));
     }
 
     @GetMapping("/today")
     @Operation(summary = "Listar tareas de hoy", description = "Devuelve las tareas programadas para hoy con paginación")
-    public Page<Task> listToday(Principal principal, Pageable pageable) {
-        return service.listToday(principal.getName(), pageable);
+    public TaskPageResponse<Task> listToday(Principal principal, Pageable pageable) {
+        return TaskPageResponse.from(service.listToday(principal.getName(), pageable));
     }
 
     @PostMapping

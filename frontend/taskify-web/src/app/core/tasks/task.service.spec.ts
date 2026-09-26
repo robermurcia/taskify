@@ -40,4 +40,17 @@ describe('TaskService', () => {
         const exclude = http.expectOne(req => req.url.endsWith('/1/exclude'));
         expect(exclude.request.params.get('date')).toBe('2026-09-24'); exclude.flush(task);
     });
+
+    it('creates once and retrieves the saved task again after a reload', () => {
+        service.create({ title: 'Task', priority: 'LOW' }).subscribe(created => expect(created.id).toBe('1'));
+        const create = http.expectOne(`${environment.apiUrl}/tasks`);
+        expect(create.request.method).toBe('POST');
+        create.flush(task);
+        for (let reload = 0; reload < 2; reload++) {
+            service.listAll().subscribe(tasks => expect(tasks).toEqual([task]));
+            const list = http.expectOne(req => req.url === `${environment.apiUrl}/tasks`);
+            expect(list.request.method).toBe('GET');
+            list.flush({ content: [task], number: 0, totalPages: 1, last: true });
+        }
+    });
 });
