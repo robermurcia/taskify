@@ -83,6 +83,37 @@ class TaskControllerTest {
         }
 
         @Test
+        void paginatedListsPreserveMetadataAndTodayContract() throws Exception {
+                var pageable = org.springframework.data.domain.PageRequest.of(1, 2,
+                                org.springframework.data.domain.Sort.by("id").ascending());
+                when(taskService.list(eq("test@example.com"), any(), any(), eq(pageable)))
+                                .thenReturn(new PageImpl<>(java.util.List.of(task), pageable, 3));
+                mockMvc.perform(get("/api/tasks?page=1&size=2&sort=id,asc").principal(() -> "test@example.com"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content[0].excludedDates[0]").value("2026-09-24"))
+                                .andExpect(jsonPath("$.number").value(1))
+                                .andExpect(jsonPath("$.size").value(2))
+                                .andExpect(jsonPath("$.totalPages").value(2))
+                                .andExpect(jsonPath("$.totalElements").value(3))
+                                .andExpect(jsonPath("$.numberOfElements").value(1))
+                                .andExpect(jsonPath("$.first").value(false))
+                                .andExpect(jsonPath("$.last").value(true))
+                                .andExpect(jsonPath("$.empty").value(false))
+                                .andExpect(jsonPath("$.sort.sorted").value(true))
+                                .andExpect(jsonPath("$.pageable.offset").value(2))
+                                .andExpect(jsonPath("$.pageable.pageNumber").value(1))
+                                .andExpect(jsonPath("$.pageable.pageSize").value(2))
+                                .andExpect(jsonPath("$.pageable.paged").value(true));
+                when(taskService.listToday(eq("test@example.com"), any())).thenReturn(Page.empty(pageable));
+                mockMvc.perform(get("/api/tasks/today?page=1&size=2&sort=id,asc").principal(() -> "test@example.com"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content").isEmpty())
+                                .andExpect(jsonPath("$.empty").value(true))
+                                .andExpect(jsonPath("$.totalElements").value(0))
+                                .andExpect(jsonPath("$.number").value(1));
+        }
+
+        @Test
         void create_ReturnsCreatedTask() throws Exception {
                 when(taskService.create(any(TaskRequestDTO.class), eq("test@example.com"))).thenReturn(task);
 

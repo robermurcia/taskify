@@ -32,3 +32,12 @@ MongoDB must allow connections from the deployment environment. Existing API sec
 Set `CORS_ALLOWED_ORIGINS` in Render to your exact frontend origin, such as `https://your-project.vercel.app`, without a trailing slash. Multiple trusted origins can be comma-separated; the default is `http://localhost:4200`. This allows requests whose Origin header is forwarded by the Vercel proxy. Add custom domains explicitly instead of allowing every preview domain.
 
 References: [Render Docker services](https://render.com/docs/docker), [port binding](https://render.com/docs/web-services#port-binding).
+
+## Demo startup and API compatibility
+
+- `GET /api/health` is public and returns only `{"status":"UP"}` with `Cache-Control: no-store`. It checks HTTP liveness, not MongoDB readiness, and exposes no infrastructure details. It can be used as the Render HTTP health check. Deploy this endpoint before the frontend startup screen.
+- `GET /api/tasks` and `GET /api/tasks/today` keep their existing query parameters, task content and top-level pagination fields (`content`, `number`, `size`, `totalElements`, `totalPages`, `first`, `last`, `empty`, `numberOfElements`, `sort`, `pageable`). An explicit response DTO replaces direct `PageImpl` serialization; metadata is not moved under a new `page` field.
+- Spring Security creates the authentication provider from the existing `UserDetailsService` and BCrypt password encoder. Login, JWT validation and refresh contracts are unchanged.
+- Swagger UI and OpenAPI are disabled by default, including access to their public routes. Set `API_DOCS_ENABLED=true` only where you intentionally want public API documentation. No change is required to `SECRET_KEY` or `MONGO_URI` for this feature.
+
+Regression checks cover cold startup, bounded waiting/manual retry, authentication, pagination and creating/listing/reloading tasks. The local packaged-JAR smoke check also created, queried and removed a temporary task using the configured MongoDB connection. This is not a verification of a deployed Vercel/Render release.

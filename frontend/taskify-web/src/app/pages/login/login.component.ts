@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { finalize } from 'rxjs';
+import { finalize, TimeoutError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({ selector: 'app-login', standalone: true, imports: [ReactiveFormsModule, RouterLink],
@@ -32,7 +32,8 @@ export class LoginComponent {
         ).subscribe({
             next: () => { void this.router.navigate(['/']); },
             error: (error: unknown) => {
-                this.error = error instanceof HttpErrorResponse && error.status === 0
+                this.error = error instanceof TimeoutError ? 'El servidor tarda demasiado en responder. Puedes volver a iniciar sesión.'
+                    : error instanceof HttpErrorResponse && error.status === 0
                     ? 'No se ha podido conectar. Comprueba tu conexión y vuelve a intentarlo.'
                     : error instanceof HttpErrorResponse && error.status === 401 ? 'El correo o la contraseña no son correctos.' : 'No pudimos iniciar sesión. Inténtalo de nuevo.';
             }

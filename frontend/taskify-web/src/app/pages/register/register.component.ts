@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { finalize } from 'rxjs';
+import { finalize, TimeoutError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({ selector: 'app-register', standalone: true, imports: [ReactiveFormsModule, RouterLink],
@@ -32,7 +32,8 @@ export class RegisterComponent {
         ).subscribe({
             next: () => { void this.router.navigate(['/']); },
             error: (error: unknown) => {
-                this.error = error instanceof HttpErrorResponse && error.status === 0
+                this.error = error instanceof TimeoutError ? 'No pudimos confirmar el registro a tiempo. Prueba a iniciar sesión antes de volver a crear la cuenta.'
+                    : error instanceof HttpErrorResponse && error.status === 0
                     ? 'No se ha podido conectar. Comprueba tu conexión y vuelve a intentarlo.'
                     : error instanceof HttpErrorResponse && error.status === 400 ? 'No se pudo crear la cuenta. Comprueba los datos o inicia sesión si ya estás registrado.' : 'No pudimos crear tu cuenta. Inténtalo de nuevo.';
             }

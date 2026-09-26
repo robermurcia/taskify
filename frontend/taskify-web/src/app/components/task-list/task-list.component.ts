@@ -1,7 +1,7 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Observable, finalize } from 'rxjs';
+import { Observable, finalize, TimeoutError } from 'rxjs';
 import { TaskService } from '../../core/tasks/task.service';
 import { Task, TaskRequest, Priority } from '../../core/tasks/models/task.models';
 import { addDays, dateLabel, localDate, occursOn } from '../../core/tasks/task-date';
@@ -97,7 +97,9 @@ export class TaskListComponent implements OnInit {
                     ? (editing ? 'Cambios guardados.' : 'Tarea creada.')
                     : 'Tarea guardada en otra fecha. Puedes verla desde el calendario.';
             },
-            error: () => this.formError = 'No pudimos guardar la tarea. Tus cambios siguen aquí; inténtalo de nuevo.'
+            error: (error: unknown) => this.formError = error instanceof TimeoutError
+                ? 'No pudimos confirmar el guardado. Cierra este formulario y recarga las tareas antes de reenviar para evitar duplicados.'
+                : 'No pudimos guardar la tarea. Tus cambios siguen aquí; inténtalo de nuevo.'
         });
     }
     deleteTask(task: Task): void {

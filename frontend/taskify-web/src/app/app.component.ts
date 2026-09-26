@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { DemoStartupService } from './core/startup/demo-startup.service';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -8,4 +9,7 @@ import { RouterOutlet } from '@angular/router';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {}
+export class AppComponent {
+  readonly startup = inject(DemoStartupService);
+  constructor() { this.startup.start(); }
+}

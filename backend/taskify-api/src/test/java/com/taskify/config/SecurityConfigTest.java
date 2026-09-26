@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(TaskController.class)
+@WebMvcTest({TaskController.class, com.taskify.health.HealthController.class})
 @Import({SecurityConfig.class, JwtFilter.class, JwtService.class})
 class SecurityConfigTest {
     private static final String TEST_SECRET = java.util.Base64.getEncoder().encodeToString(
@@ -36,8 +36,43 @@ class SecurityConfigTest {
 
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwt;
+    @Autowired private org.springframework.security.authentication.AuthenticationManager authenticationManager;
+    @Autowired private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     @MockitoBean private TaskService tasks;
     @MockitoBean private UserDetailsService users;
+
+    @Test
+    void publicHealthDoesNotRequireJwtAndCannotBeCached() throws Exception {
+        mvc.perform(get("/api/health")).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .json("{\"status\":\"UP\"}"));
+    }
+
+    @Test
+    void authenticationManagerUsesUserDetailsAndBcrypt() {
+        when(users.loadUserByUsername("test@example.com")).thenReturn(
+                org.springframework.security.core.userdetails.User.withUsername("test@example.com")
+                        .password(passwordEncoder.encode("test-password")).roles("USER").build());
+        var authenticated = authenticationManager.authenticate(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        "test@example.com", "test-password"));
+        org.junit.jupiter.api.Assertions.assertTrue(authenticated.isAuthenticated());
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.security.authentication.BadCredentialsException.class,
+                () -> authenticationManager.authenticate(
+                        new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                                "test@example.com", "wrong-password")));
+    }
+
+    @Test
+    void documentationIsNotExposedByDefaultEvenWithAValidJwt() throws Exception {
+        for (String path : new String[] { "/swagger-ui/index.html", "/v3/api-docs", "/webjars/swagger-ui/index.html" }) {
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
+            mvc.perform(get(path).header("Authorization", "Bearer " + jwt.generateToken("test@example.com")))
+                    .andExpect(status().isForbidden());
+        }
+    }
 
     @Test
     void missingOrInvalidJwtReturns401() throws Exception {

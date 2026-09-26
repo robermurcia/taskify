@@ -1,1 +1,18 @@
-<router-outlet />
+@if (startup.state() === 'ready') {
+  <router-outlet />
+} @else {
+  <main class="startup-shell">
+    <section class="startup-card" aria-labelledby="startup-title" [attr.aria-busy]="startup.state() === 'loading'">
+      <p class="eyebrow">TASKIFY · DEMO</p>
+      @if (startup.state() === 'error') {
+        <h1 id="startup-title">No pudimos conectar</h1>
+        <p role="alert">El servidor no ha respondido a tiempo o no está disponible. Comprueba tu conexión y vuelve a intentarlo.</p>
+        <button class="button primary" type="button" (click)="startup.start()">Reintentar conexión</button>
+      } @else {
+        <span class="startup-spinner" aria-hidden="true"></span>
+        <h1 id="startup-title">Preparando tu espacio</h1>
+        <p role="status">La demo puede tardar alrededor de un minuto en arrancar si el servidor está dormido. Gracias por esperar.</p>
+      }
+    </section>
+  </main>
+}

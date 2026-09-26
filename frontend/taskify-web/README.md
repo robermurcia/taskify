@@ -39,6 +39,14 @@ Importar `robermurcia/taskify` y usar la rama de producción `main`:
 
 En Render, configurar `CORS_ALLOWED_ORIGINS` con el origen HTTPS exacto asignado por Vercel, sin barra final. Configurar también una `SECRET_KEY` Base64 de al menos 32 bytes aleatorios según el README del backend. Nunca poner `SECRET_KEY` ni `MONGO_URI` en Vercel o en el código frontend. Los dominios de preview necesitan autorización explícita en CORS si se van a usar.
 
+## Arranque de la demo
+
+Al abrir o recargar la aplicación se hace una sola petición pública a `GET /api/health`, sin JWT ni refresh. La pantalla de espera explica que el servidor puede tardar alrededor de un minuto. El límite es 90 segundos; un error o timeout ofrece reintento manual, sin polling ni reintentos automáticos. Los formularios y las tareas se montan cuando responde `{"status":"UP"}`. El estado se conserva durante la navegación de esa pestaña, pero se comprueba de nuevo al recargar.
+
+Las demás peticiones a la API también tienen un límite de 90 segundos. Los formularios explican la espera y se desbloquean al fallar, conservando sus datos. No se repiten escrituras automáticamente por errores de red o timeout; tras un guardado no confirmado se indica recargar antes de reenviar. La renovación de JWT existente mantiene su único reintento por 401.
+
+Publicar primero el backend con `/api/health`, y después el frontend: la versión anterior del backend no ofrece este endpoint. El proxy Vercel existente de `/api` ya cubre la nueva ruta. La comprobación indica que Spring responde, no garantiza disponibilidad de MongoDB; los errores de consulta se presentan en la pantalla de tareas con reintento.
+
 ## Responsabilidades
 
 - `core/auth`: contrato de autenticación, guard y JWT interceptor.

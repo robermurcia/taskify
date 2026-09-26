@@ -7,6 +7,7 @@
     <p class="subtitle">Tus tareas, tus planes y un poco más de claridad.</p>
 
     @if (error) { <p class="notice error" role="alert">{{ error }}</p> }
+    @if (loading) { <p class="notice" role="status">Conectando… Si la demo estaba inactiva, el servidor puede tardar alrededor de un minuto en arrancar.</p> }
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <fieldset [disabled]="loading">
         <div class="field"><label for="name">Nombre</label><input id="name" formControlName="name" autocomplete="name" maxlength="60" placeholder="Tu nombre" aria-describedby="name-error" [attr.aria-invalid]="form.controls.name.invalid && form.controls.name.touched">
